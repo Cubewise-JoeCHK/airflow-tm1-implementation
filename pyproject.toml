@@ -1,0 +1,34 @@
+[project]
+name = "tm1-airflow-implementation"
+version = "1.0.0"
+description = "TM1 Airflow Implementation created by Cubewise HK"
+readme = "README.md"
+authors = [
+    {name = "Cubewise HK - Joe Chow HK", email = "jchow@cubewise.com"}
+]
+dependencies = [
+    "setuptools",
+    "wheel",
+    "apache-airflow",
+    "pandas",
+    "TM1py",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "coverage",
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["airflow_tm1"]
+
+[tool.isort]
+profile = "hug"
+src_paths = ["tests", "airflow_tm1"]
