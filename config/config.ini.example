@@ -1,6 +1,10 @@
 [instance_name]
-address =
+address=
 ssl=
 user=
 password=
 port=
+
+[env]
+project-root=
+data=
