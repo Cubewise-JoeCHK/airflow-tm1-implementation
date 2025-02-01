@@ -20,7 +20,6 @@ def simple_task_with_return(**context) -> str:
 
 @task
 def lower_case_name(name, **context) -> str:
-    print(context)
     return name.lower()
 
 
