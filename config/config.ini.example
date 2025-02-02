@@ -8,3 +8,9 @@ port=
 [env]
 project-root=
 data=
+default-instance=
+
+[airflow]
+url =
+user =
+password =

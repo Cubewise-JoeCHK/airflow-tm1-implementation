@@ -6,15 +6,12 @@ import pandas as pd
 from TM1py.Objects import Element
 
 from airflow.models import Variable
-from airflow_tm1.utils.config import Config
 from airflow_tm1.utils.tm1 import connect_to_tm1
-
-config = Config.load_config_from_airflow()
 
 template_log_variables = "{dag_id}-log"
 
 
-def callback(context, instance_name="demo"):
+def callback(context):
     airflow_task = context["dag"].dag_id
 
     payload = {
@@ -47,10 +44,10 @@ def update_callback_log(dag_id, payload: dict):
     return records
 
 
-def send_records_to_log_cube(airflow_task, records, instance_name="demo"):
+def send_records_to_log_cube(airflow_task, records):
     df = pd.DataFrame(records)
     df["Line Item"] = df.index.map(lambda x: str(x + 1).zfill(4))
-    with connect_to_tm1(config[instance_name]) as tm1:
+    with connect_to_tm1() as tm1:
         if airflow_task not in tm1.elements.get_element_names(
             "Airflow Task", "Airflow Task"
         ):

@@ -1,8 +1,5 @@
 from airflow.decorators import task
-from airflow_tm1.utils.config import Config
 from airflow_tm1.utils.tm1 import connect_to_tm1
-
-config = Config.load_config_from_airflow()
 
 
 @task
@@ -17,7 +14,7 @@ def print_Hello_World_with_object(obj, **context):
 
 @task
 def retrieve_tm1_task_object(**context):
-    with connect_to_tm1(config["demo"]) as tm1:
+    with connect_to_tm1() as tm1:
         elements_df = tm1.elements.get_elements_dataframe(
             "Airflow Task Group",
             hierarchy_name="Airflow Task Group",
