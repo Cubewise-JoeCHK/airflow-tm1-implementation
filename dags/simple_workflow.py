@@ -16,4 +16,20 @@ def DAG_simple_task_sample():
     print_context()
 
 
+@dag(
+    dag_id="simple-task-sample-second-method",
+    schedule_interval=None,
+    catchup=False,
+    tags=["airflow implementation"],
+    default_args=default_args,
+)
+def DAG_simple_task_sample_method_2():
+
+    name = lower_case_name("Alice")
+    simple_task()
+    print_context()
+    name >> simple_task_with_param(name)
+
+
 DAG_simple_task_sample()
+DAG_simple_task_sample_method_2()
