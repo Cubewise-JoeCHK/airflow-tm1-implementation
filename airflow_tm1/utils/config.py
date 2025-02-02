@@ -33,7 +33,7 @@ class Config:
         return dict(self._config[instance_name])
 
     @property
-    def airflow(self) -> Any:
+    def airflow(self):
         return self._config["airflow"]
 
     @property
