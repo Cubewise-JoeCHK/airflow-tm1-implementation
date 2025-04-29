@@ -1,0 +1,17 @@
+[Unit]
+Description=Airflow Webserver
+After=network.target
+Wants=airflow-scheduler.service
+
+[Service]
+User=cubejoe
+Group=cubejoe
+Type=simple
+EnvironmentFile=/etc/sysconfig/airflow
+ExecStart=/home/cubejoe/.local/bin/airflow webserver --port 8080
+Restart=always
+RestartSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

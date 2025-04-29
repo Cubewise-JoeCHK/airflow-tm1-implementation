@@ -1,0 +1,9 @@
+# sudo nano /etc/sysconfig/airflow
+
+
+# Common Airflow environment variables
+AIRFLOW_HOME=/home/cubejoe/airflow
+PATH=/home/cubejoe/.local/bin:/usr/local/bin:/usr/bin:/bin
+# If using a virtual environment
+# VIRTUAL_ENV=/path/to/your/airflow/venv
+# PATH=$VIRTUAL_ENV/bin:$PATH

@@ -1,0 +1,16 @@
+[Unit]
+Description=Airflow Scheduler
+After=network.target
+Wants=airflow-webserver.service
+
+[Service]
+User=cubejoe
+Group=cubejoe
+Type=simple
+EnvironmentFile=/etc/sysconfig/airflow
+ExecStart=/home/cubejoe/.local/bin/airflow scheduler
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
