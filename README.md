@@ -1,35 +1,27 @@
 # airflow-tm1-implementation
 this is the TM1 airflow implementation example
 
-## `airflow.cfg` Configuration
-three critical configuration should be paid attention on before the airflow solution development
-### DAGs Examples
-```ini
-# Whether to load the DAG examples that ship with Airflow. It's good to
-# get started, but you probably want to set this to ``False`` in a production
-# environment
-#
-# Variable: AIRFLOW__CORE__LOAD_EXAMPLES
-#
-load_examples = True
+# File Structure 
+```bash
+.
+├── bin # execution or snippet 
+│   ├── update_JWT.processes #update JWT token for TM1
+│   ├── airflow_variables.json # airflow variables for TM1
+├── airflow_tm1 #project module folder
+│   ├── __init__.py
+│   ├── interface.py
+│   ├── cli # command line interface
+│   │   ├── __init__.py
+│   │   ├── task_1.py
+├── dags #airflow dag folder
+│   ├── constant.py # some configuration for global usage 
+│   ├── task_1.py # airflow dag file
 ```
-### DAGs Folder Location
-```ini
-# The folder where your airflow pipelines live, most likely a
-# subfolder in a code repository. This path must be absolute.
-#
-# Variable: AIRFLOW__CORE__DAGS_FOLDER
-#
-dags_folder = /home/cubejoe/airflow/dags
+
+# Development Workflow 
+```mermaid 
+graph TD
+    A[develop a cli tools] --> B[develop airflow composer]
+    B --> C[deploy to production]
 ```
-### API Entrypoints
-```ini
-# Comma separated list of auth backends to authenticate users of the API. See
-# `Security: API
-# <https://airflow.apache.org/docs/apache-airflow/stable/security/api.html>`__ for possible values.
-# ("airflow.api.auth.backend.default" allows all requests for historic reasons)
-#
-# Variable: AIRFLOW__API__AUTH_BACKENDS
-#
-auth_backends = airflow.api.auth.backend.session
-```
+
