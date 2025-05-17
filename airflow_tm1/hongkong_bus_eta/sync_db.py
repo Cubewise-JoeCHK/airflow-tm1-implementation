@@ -145,6 +145,18 @@ def sync_stop(tm1: TM1Service, stops: list[Stop]):
     tm1.cells.write_values('}}ElementAttributes_{}'.format(dimension_name), cellset_values)
     logger.info("Stop sync completed successfully")
     
+    logger.debug("Deleting existing edges for rebuilding hierarchy")
+    tm1.elements.delete_edges(dimension_name, hierarchy_name, tm1.elements.get_edges(dimension_name, hierarchy_name))
+    
+    edges = {}        
+    cellset_values = {}
+    for stop in stops: 
+        edges.update({('All Stops', stop.stop): 1})
+    
+    logger.info(f"Adding {len(edges)} edges to hierarchy")
+    tm1.elements.add_edges(dimension_name, hierarchy_name, edges)
+    
+    
 def sync_route_stop(tm1: TM1Service, route_stops: list[RouteStop]): 
     """
     Sync route stop to TM1
