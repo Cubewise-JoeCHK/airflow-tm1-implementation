@@ -1,5 +1,6 @@
 # cubewise specific
 config.ini
+tmp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
