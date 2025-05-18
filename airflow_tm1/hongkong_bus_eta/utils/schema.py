@@ -151,3 +151,20 @@ class TimeTable(BaseModel):
     def tm1_cellvalue(self): 
         return {(self.route.strip(), self.bound.strip(), self.service_type.strip(), hour, minutes, self.day_type.strip()): bound_time.strip() for hour, minutes, bound_time in self.generate_5_mins_sessions()}
 
+class TM1Cube_BusETA(BaseModel): 
+    route: str
+    bound: str
+    measure: str
+
+    @classmethod
+    def parse_from_cellset(cls, cellset: str) -> 'TM1Cube_BusETA':
+        """
+        Parse a cellset string and return an instance of TM1Cube_BusETA.
+        """
+        data = cellset.split(',')
+        assert len(data) == 3, "Cellset must contain exactly 3 elements {}".format(data)
+        return cls(
+            route=data[0],
+            bound=data[1],
+            measure=data[2]
+        )
