@@ -1,0 +1,17 @@
+[Unit]
+Description=Apache Airflow 3.0.1
+
+[Service]
+Type=simple
+Environment="AIRFLOW_HOME=/home/cubewise-hk/airflow"
+# Prioritize the virtualenv bin directory in PATH
+Environment="PATH=/home/cubewise-hk/airflow/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+WorkingDirectory=/home/cubewise-hk/airflow
+# Use the Python interpreter from your virtual environment
+ExecStart=/home/cubewise-hk/airflow/bin/python /home/cubewise-hk/airflow-tm1-implementation/bin/startup.py
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

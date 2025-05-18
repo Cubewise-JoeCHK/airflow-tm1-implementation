@@ -9,9 +9,10 @@ authors = [
 dependencies = [
     "setuptools",
     "wheel",
-    "apache-airflow",
+    "apache-airflow==3.0.1",
     "pandas",
     "TM1py",
+    "flask_appbuilder",
 ]
 
 [project.optional-dependencies]
