@@ -92,23 +92,8 @@ def clear_timetable(tm1: TM1Service, bus_info: TM1Cube_BusETA):
         logger.error(f"Error clearing timetable for route={bus_info.route}, bound={bus_info.bound}: {str(e)}", exc_info=True)
         raise
 
-def sync_timetable(tm1: TM1Service, timetable_data: list[TimeTable]):
-    logger.info(f"Starting to sync timetable for route={route}, bound={bound}")
-    try:
-        cube_name = 'Bus TimeTable'
-        logger.info(f"Clearing existing data in cube '{cube_name}' for route={route}, bound={bound}, service_type={service_type}")
-        tm1.cubes.cells.clear(cube_name, route=f'{{[Route].[{route}]}}', bound=f'{{[Bound].[{bound}]}}', mbustimetable='Except({{[M Bus TimeTable].Members}}, {{[M Bus TimeTable].[Valid]}})')
-        
-        logger.info(f"Processing {len(timetable_data)} timetable entries")
-        cellset = {}
-        for i, timetable in enumerate(timetable_data):
-            cellset.update(timetable.tm1_cellvalue)
-            if (i + 1) % 1000 == 0:  # Log progress for large datasets
-                logger.info(f"Processed {i + 1} of {len(timetable_data)} entries")
-        
-        logger.info(f"Writing {len(cellset)} cell values to cube '{cube_name}'")
-        tm1.cubes.cells.write_values(cube_name, cellset)
-        logger.info(f"Successfully synced timetable data for route={route}, bound={bound}")
-    except Exception as e:
-        logger.error(f"Error syncing timetable for route={route}, bound={bound}: {str(e)}", exc_info=True)
-        raise
+def update_timetable(tm1: TM1Service, timetable: TimeTable): 
+    logger.info(f"Updating timetable for route={timetable.route}, bound={timetable.bound}, service_type={timetable.service_type}")
+    cube_name = 'Bus TimeTable'
+    tm1.cubes.cells.write_values(cube_name, timetable.tm1_cellvalue)
+    logger.info(f"Successfully updated timetable for route={timetable.route}, bound={timetable.bound}, service_type={timetable.service_type}, datetype={timetable.day_type}")

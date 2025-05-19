@@ -1,6 +1,6 @@
-from airflow.sdk import task, Metadata, asset, AssetAlias
+from airflow.sdk import task, Metadata, asset, AssetAlias, dag, Asset
 
-from airflow_tm1.hongkong_bus_eta.utils.schema import TimeTable
+from airflow_tm1.hongkong_bus_eta.utils.schema import TimeTable, TM1Cube_BusETA
 from . import sync_db, timetable
 from airflow_provider_tm1.hooks.tm1 import TM1Hook
 from TM1py import TM1Service
@@ -23,22 +23,7 @@ def asset_route_stop(self):
 def asset_stop(self): 
     yield Metadata(self, sync_db.get_stop_list())
     
-@asset(uri='file://tmp/timetable', schedule=None, tags=['OpenData', 'HongKong', 'Bus'], dag_display_name='Data.Gov.HK KMB Bus Timetable DataSource')
-def asset_timetable(self, conn_id: str = 'cubewise-hk'):
-    with TM1Hook(conn_id).get_conn() as tm1:
-        data = timetable.retrieve_timetable_list(tm1)
-        attr = tm1.elements.get_attribute_of_elements('Bus Bound', 'Bus Bound', 'KMB')
-    extra = []
-    for row in data.split('\r\n'):
-        if row.startswith('Bus Route'):
-            continue
-        route, bound = row.split(',')[:2]
-        data = timetable.get_timetable(route=route, bound=attr.get(bound))['data']
-        dataset = [{'service_type': service_type, 'bound': bound, 'route': route, 'data': [d for d in data]} for service_type, data in data.items()]
-        if not dataset:
-            continue
-        extra += dataset
-    yield Metadata(self, {'data': extra})
+asset_kmb_timetable = Asset(name='TimeTable', uri='file://tmp/kmb_timetable')
 
             
 @task(inlets=[asset_route])
@@ -59,28 +44,25 @@ def load_stop(conn_id: str, *, triggering_asset_events=None):
         for event in triggering_asset_events[asset_stop]:
             sync_db.sync_stop(tm1, sync_db.parse_response(event.extra, sync_db.Stop))
 
-@task(inlets=[asset_timetable])
-def load_timetable(conn_id: str, *, triggering_asset_events=None): 
-    with TM1Hook(conn_id).get_conn() as tm1: 
-        for event in triggering_asset_events[asset_timetable]:
-            dataset = event.extra 
-            service_type = dataset['service_type']
-            bound = dataset['bound']
-            route = dataset['route']
-            timetable_data = [TimeTable(**d, service_type=service_type, bound=bound) for d in dataset['data']]
-            timetable.sync_timetable(tm1, timetable_data, route=route, bound=bound, service_type=service_type)
-                
-
-@task(outlets=[bus_data])
-def retrieve_timetable(conn_id: str, outlet_events=None, **context, ): 
+@task
+def get_valid_route(conn_id: str): 
     with TM1Hook(conn_id).get_conn() as tm1:
         data = timetable.retrieve_timetable_list(tm1)
-        attr = tm1.elements.get_attribute_of_elements('Bus Bound', 'Bus Bound', 'KMB')
-    return [tuple(row.split(',')[:2]) for row in data.split('\r\n') if not row.startswith('Bus Route') and len(row.split(',')) > 2]
-    for row in data.split('\r\n'):
-        if row.startswith('Bus Route'):
-            continue
-        route, bound = row.split(',')[:2]
-        data = timetable.get_timetable(route=route, bound=attr.get(bound))['data']
-        dataset = [{'service_type': service_type, 'bound': bound, 'route': route, 'data': [d for d in data]} for service_type, data in data.items()] 
-        outlet_events[bus_data].add(asset_timetable, extra=dataset)
+    return [d.to_dict() for d in data]
+
+@task(outlets=[asset_kmb_timetable])
+def get_timetable(bus_info: dict, outlet_events=None, **context): 
+    yield Metadata(asset_kmb_timetable, extra={'data': timetable.get_timetable(TM1Cube_BusETA.from_dict(bus_info))})
+    
+@task
+def clear_timetable_cube(conn_id: str, bus_info: dict): 
+    with TM1Hook(conn_id).get_conn() as tm1:
+        timetable.clear_timetable(tm1, bus_info=TM1Cube_BusETA.from_dict(bus_info))
+
+@task(inlets=[asset_kmb_timetable])
+def load_timetable_to_tm1(conn_id: str, *, triggering_asset_events=None): 
+    with TM1Hook(conn_id).get_conn() as tm1:
+        for event in triggering_asset_events[asset_kmb_timetable]:
+            timetable_list = [TimeTable(**d) for d in event.extra['data']]
+            for timetable_data in timetable_list:
+                timetable.update_timetable(tm1, timetable_data)

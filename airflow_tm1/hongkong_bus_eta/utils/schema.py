@@ -1,5 +1,5 @@
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, field_validator, Field, ConfigDict
 from TM1py.Objects import Element
 from TM1py.Utils.Utils import get_tm1_time_value_now
 import datetime as dt 
@@ -85,27 +85,11 @@ class RouteStop(BaseModel):
     @property 
     def tm1_cellvalue(self): 
         return {(self.route, self.bound, self.service_type, self.stop, 'Sequence'): self.seq}
-"""
-            {
-                "DayType": "MF        ",
-                "BoundTime1": "30",
-                "ServiceType_Eng": "",
-                "BoundText1": "05:40-06:10",
-                "Origin_Eng": "CHOI WAN",
-                "ServiceType": "01   ",
-                "Destination_Chi": "紅磡站",
-                "OrderSeq": "2",
-                "Route": "21",
-                "Destination_Eng": "HUNG HOM STATION",
-                "BoundTime2": "25-30",
-                "Origin_Chi": "彩雲",
-                "BoundText2": "06:25-00:15",
-                "ServiceType_Chi": ""
-            },
-"""   
-class TimeTable(BaseModel): 
+
+class TimeTable(BaseModel):
+    model_config = ConfigDict(populate_by_name=True) 
     bound: str 
-    service_type : str 
+    # service_type : str 
     day_type: str = Field(alias='DayType')
     bound_time_1: str = Field(alias='BoundTime1')
     service_type_eng: str = Field(alias='ServiceType_Eng')
@@ -128,21 +112,27 @@ class TimeTable(BaseModel):
         bound_text = self.bound_text_1 or self.bound_text_2
         clock_pattern = r'\d{2}:\d{2}'
         start_end = bound_text.split('-')
-        start_time = start_end[0]
+        start_time = start_end[0].replace('*', '').strip()
+        if not re.match(clock_pattern, start_time):
+            yield '00', '00', 'not available'
+            return 
         start_hour = int(re.match(clock_pattern, start_time).group(0)[:2])
         start_minute = int(re.match(clock_pattern, start_time).group(0)[3:])
 
         start_time = dt.datetime.combine(dt.date.today(), dt.time(start_hour, start_minute))
 
         if len(start_end) == 1:
-            print(self.bound_text_1)
-            return  
-        time_slots = []
+            yield  str(start_time.hour).zfill(2), str(start_time.minute).zfill(2), self.bound_time_1 or self.bound_time_2
+            return 
         
-        end_time = start_end[1]
+        end_time = start_end[1].strip()
+        if not re.match(clock_pattern, end_time):
+            # raise ValueError(f"Invalid end time format: {end_time} {bound_text}")
+            yield '00', '00', 'not available'
+            return 
         end_hour = int(re.match(clock_pattern, end_time).group(0)[:2])
         end_minute = int(re.match(clock_pattern, end_time).group(0)[3:])
-        end_time = dt.datetime.combine(dt.date.today(), dt.time(end_hour, end_minute))
+        end_time = dt.datetime.combine(dt.date.today(), dt.time(end_hour if end_hour != 24 else 0, end_minute))
         while start_time <= end_time:
             yield str(start_time.hour).zfill(2), str(start_time.minute).zfill(2), self.bound_time_1 or self.bound_time_2
             start_time += dt.timedelta(minutes=5)
@@ -150,8 +140,34 @@ class TimeTable(BaseModel):
     @property 
     def tm1_cellvalue(self): 
         return {(self.route.strip(), self.bound.strip(), self.service_type.strip(), hour, minutes, self.day_type.strip()): bound_time.strip() for hour, minutes, bound_time in self.generate_5_mins_sessions()}
+    
+    def to_dict(self): 
+        """
+        Convert the object to a dictionary.
+        """
+        return {
+            'bound': self.bound,
+            'service_type': self.service_type,
+            'day_type': self.day_type,
+            'bound_time_1': self.bound_time_1,
+            'service_type_eng': self.service_type_eng,
+            'bound_text_1': self.bound_text_1,
+            'origin_eng': self.origin_eng,
+            'service_type': self.service_type,
+            'destination_chi': self.destination_chi,
+            'order_seq': self.order_seq,
+            'route': self.route,
+            'destination_eng': self.destination_eng,
+            'bound_time_2': self.bound_time_2,
+            'origin_chi': self.origin_chi,
+            'bound_text_2': self.bound_text_2,
+            'service_type_chi': self.service_type_chi
+        }
+        
 
 class TM1Cube_BusETA(BaseModel): 
+    model_config = ConfigDict(populate_by_name=True) 
+    
     route: str
     bound: str
     measure: str
@@ -161,10 +177,34 @@ class TM1Cube_BusETA(BaseModel):
         """
         Parse a cellset string and return an instance of TM1Cube_BusETA.
         """
-        data = cellset.split(',')
+        data = cellset.replace('"', '').split(',')
         assert len(data) == 3, "Cellset must contain exactly 3 elements {}".format(data)
         return cls(
             route=data[0],
             bound=data[1],
             measure=data[2]
         )
+        
+    @classmethod
+    def from_dict(cls, data: dict) -> 'TM1Cube_BusETA':
+        """
+        Create an instance of TM1Cube_BusETA from a dictionary.
+        """
+        assert 'route' in data, "Missing 'route' in data"
+        assert 'bound' in data, "Missing 'bound' in data"
+        assert 'measure' in data, "Missing 'measure' in data"
+        return cls(
+            route=data['route'],
+            bound=data['bound'],
+            measure=data['measure']
+        )
+        
+    def to_dict(self) -> dict:
+        """
+        Convert the object to a dictionary.
+        """
+        return {
+            'route': self.route,
+            'bound': self.bound,
+            'measure': self.measure
+        }
